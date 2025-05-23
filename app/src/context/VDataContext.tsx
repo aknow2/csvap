@@ -13,10 +13,17 @@ type ScatterplotLayer = {
   color: string;
 }
 
-export type LayerSettings = HeatmapLayer | ScatterplotLayer;
+type HexagonLayer = {
+  brand: 'hexagon-layer';
+  radius: number;
+  coverage: number; // Example property, adjust as needed
+  // Add other HexagonLayer specific properties here
+}
+
+export type LayerSettings = HeatmapLayer | ScatterplotLayer | HexagonLayer;
 
 export type LayerTypes = LayerSettings['brand'];
-export const layerTypes: LayerTypes[] = ['heatmap-layer', 'scatterplot-layer'];
+export const layerTypes: LayerTypes[] = ['heatmap-layer', 'scatterplot-layer', 'hexagon-layer'];
 export interface VData {
   visualizationData: VisualizationData[];
   layerSettings: LayerSettings;
@@ -263,8 +270,11 @@ export const VDataProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // layer settings
   const [layerSettings, setLayerSettings] = useState<LayerSettings>({
-    brand: 'heatmap-layer',
-    opacity: 0.5,
+    brand: 'hexagon-layer', // Default to HexagonLayer
+    radius: 1000,           // Example default radius for HexagonLayer
+    coverage: 0.8,          // Example default coverage for HexagonLayer
+    // upperPercentile: 100, // Example: if you add more properties to HexagonLayer type
+    // colorRange: [[255,255,178,255],[254,204,92,255],[253,141,60,255],[240,59,32,255],[189,0,38,255]], // Example color range
   });
 
   const channelRef = useRef<BroadcastChannel | null>(null);

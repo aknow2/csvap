@@ -5,7 +5,7 @@ import type { DeckProps } from '@deck.gl/core';
 import { type VData } from '../context/VDataContext';
 import { useControllerStatus } from '../context/ControllerStatusContext';
 import type { VisualizationData } from '../context/CSVContext';
-import { HeatmapLayer } from '@deck.gl/aggregation-layers';
+import { HeatmapLayer, HexagonLayer } from '@deck.gl/aggregation-layers';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ScatterplotLayer } from '@deck.gl/layers';
 import './Map.css';
@@ -58,6 +58,17 @@ const createLayers = (data: VData | null) => {
           pickable: true,
           getRadius: () => layerSettings.radius,
           getFillColor: () => hexStringToRGB(layerSettings.color ?? '#FFFFFF'),
+        })
+      ];
+    case 'hexagon-layer':
+      return [
+        new HexagonLayer<VisualizationData>({
+          id: layerSettings.brand,
+          data: visualizationData,
+          getPosition: d => [d.longitude, d.latitude],
+          radius: layerSettings.radius, // Ensure radius is defined in HexagonLayer settings
+          coverage: layerSettings.coverage, // Ensure coverage is defined in HexagonLayer settings
+          // Add other HexagonLayer specific props here
         })
       ];
     default:
