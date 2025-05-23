@@ -92,7 +92,7 @@ function RootMap() {
   }, []);
 
   const openSettings = useCallback(() => {
-    window.open(`${window.location.hostname}/#ctrl`, 'popup', 'width=800,height=400');
+    window.open(`${window.location.href}#ctrl`, 'popup', 'width=800,height=400');
   }, []);
 
 
