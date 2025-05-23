@@ -18,7 +18,8 @@ const INITIAL_VIEW_STATE = {
   pitch: 30
 };
 
-const MAP_STYLE = "https://api.maptiler.com/maps/basic-v2/style.json?key=nI9cZrYyvwa9Bwoj6tHy";
+const MAP_STYLE = import.meta.env.VITE_MAP_STYLE_URL as string;
+console.log('MAP_STYLE', MAP_STYLE);
 function DeckGLOverlay(props: DeckProps) {
   const overlay = useControl(() => new DeckOverlay(props));
   overlay.setProps(props);

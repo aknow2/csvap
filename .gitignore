@@ -1,0 +1,16 @@
+# Ignore .env file
+.env
+
+# Ignore node_modules
+node_modules/
+
+# Ignore build output
+dist/
+build/
+
+# Ignore Vite cache
+.vite/
+
+# Ignore OS-generated files
+.DS_Store
+Thumbs.db
