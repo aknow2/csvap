@@ -68,6 +68,7 @@ const createLayers = (data: VData | null) => {
           getPosition: d => [d.longitude, d.latitude],
           radius: layerSettings.radius, // Ensure radius is defined in HexagonLayer settings
           coverage: layerSettings.coverage, // Ensure coverage is defined in HexagonLayer settings
+          opacity: layerSettings.opacity, // Add opacity setting
           // Add other HexagonLayer specific props here
         })
       ];

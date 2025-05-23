@@ -17,6 +17,7 @@ type HexagonLayer = {
   brand: 'hexagon-layer';
   radius: number;
   coverage: number; // Example property, adjust as needed
+  opacity: number; // Add opacity to HexagonLayer
   // Add other HexagonLayer specific properties here
 }
 
@@ -273,6 +274,7 @@ export const VDataProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     brand: 'hexagon-layer', // Default to HexagonLayer
     radius: 1000,           // Example default radius for HexagonLayer
     coverage: 0.8,          // Example default coverage for HexagonLayer
+    opacity: 0.8,           // Example default opacity for HexagonLayer
     // upperPercentile: 100, // Example: if you add more properties to HexagonLayer type
     // colorRange: [[255,255,178,255],[254,204,92,255],[253,141,60,255],[240,59,32,255],[189,0,38,255]], // Example color range
   });

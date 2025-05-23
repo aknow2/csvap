@@ -52,7 +52,7 @@ function LayerSelection({ layerSettings, updateLayerSettings }: { layerSettings:
                 updateLayerSettings({ brand: selectedLayer, radius: 100, color: '#49FF20'  });
                 break;
               case 'hexagon-layer': // Add Hexagon Layer case
-                updateLayerSettings({ brand: selectedLayer, radius: 1000, coverage: 0.8 }); // Set default values
+                updateLayerSettings({ brand: selectedLayer, radius: 1000, coverage: 0.8, opacity: 0.8 }); // Set default values including opacity
                 break;
               default:
                 throw new Error(`Unknown layer type: ${selectedLayer}`);
@@ -149,6 +149,21 @@ function LayerSettings({ layerSettings, updateLayerSettings }: { layerSettings: 
                 const value = parseFloat(e.target.value);
                 if (isNaN(value) || value < 0 || value > 1) return;
                 updateLayerSettings({ ...layerSettings, coverage: value });
+              }}
+            />
+          </div>
+          <div>
+            <label>Opacity (0-1)</label>
+            <input
+              type="number"
+              value={layerSettings.opacity}
+              min={0}
+              max={1}
+              step={0.01}
+              onChange={(e) => {
+                const value = parseFloat(e.target.value);
+                if (isNaN(value) || value < 0 || value > 1) return;
+                updateLayerSettings({ ...layerSettings, opacity: value });
               }}
             />
           </div>
