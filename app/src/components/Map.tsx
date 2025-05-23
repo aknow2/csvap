@@ -70,7 +70,6 @@ function RootMap() {
   const [popupInfo, setPopupInfo] = useState<{ longitude: number; latitude: number; label: string } | null>(null);
 
   const layers = createLayers(settings);
-  console.log('Layers:', layers);
   useEffect(() => {
     const map = mapRef.current;
     if (map) {

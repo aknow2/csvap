@@ -90,7 +90,6 @@ const buildVisualizationData = (
     }
 
     const isSetValidDate = !errorDateMessage && startDate && endDate && !!dateFilterColumn;
-    console.log('isSetValidDate', isSetValidDate);
     const data: VisualizationData[] = csvData.flatMap((row) => {
       if (row[latitudeColumn] === undefined || row[longitudeColumn] === undefined) {
         console.warn(`Missing latitude or longitude in row: ${JSON.stringify(row)}`);
@@ -170,7 +169,6 @@ const effectDateFilter = (
         });
         return firstValidDate ? dayjs(firstValidDate[dateFilterColumn]) : null;
       };
-      console.log('getFirstValidDate', getFirstValidDate());
       const { startDate, endDate } = csvData.reduce((acc, row) => {
 
         const dateValue =  row[dateFilterColumn] ?  dayjs(row[dateFilterColumn]) : null;
@@ -211,7 +209,6 @@ const effectDateFilter = (
 }
 
 const postUpdateSettings = ({ visualizationData, layerSettings }: VData, channel: BroadcastChannel) => {
-  console.log('postUpdateSettings', visualizationData, layerSettings);
   channel.postMessage({
     type: 'update-settings',
     payload: {

@@ -204,8 +204,6 @@ function DatetimeFilterSetting({
             const deltaTime = endDate.valueOf() - startDate.valueOf();
             const selectedStartDate = dayjs(Number(e.target.value));
             const selectedEndDate = selectedStartDate.add(deltaTime, 'millisecond');
-            console.log('Selected Start Date:', selectedStartDate.format('YYYY-MM-DDTHH:mm'));
-            console.log('Selected End Date:', selectedEndDate.format('YYYY-MM-DDTHH:mm'));
             if (selectedStartDate.isValid() && selectedEndDate.isValid() && selectedEndDate.isBefore(maxDate)) {
               setStartDate(selectedStartDate);
               setEndDate(selectedEndDate);
