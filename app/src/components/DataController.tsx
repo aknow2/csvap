@@ -51,6 +51,9 @@ function LayerSelection({ layerSettings, updateLayerSettings }: { layerSettings:
               case 'scatterplot-layer':
                 updateLayerSettings({ brand: selectedLayer, radius: 100, color: '#49FF20'  });
                 break;
+              case 'hexagon-layer': // Add Hexagon Layer case
+                updateLayerSettings({ brand: selectedLayer, radius: 1000, coverage: 0.8 }); // Set default values
+                break;
               default:
                 throw new Error(`Unknown layer type: ${selectedLayer}`);
             }
@@ -58,6 +61,7 @@ function LayerSelection({ layerSettings, updateLayerSettings }: { layerSettings:
         >
           <option value="heatmap-layer">Heatmap Layer</option>
           <option value="scatterplot-layer">Scatterplot Layer</option>
+          <option value="hexagon-layer">Hexagon Layer</option> {/* Add Hexagon Layer option */}
         </select>
       </div>
       </OutlinedCard>
@@ -79,6 +83,7 @@ function LayerSettings({ layerSettings, updateLayerSettings }: { layerSettings: 
               style={{ width: '40%' }}
               min={0}
               max={1}
+              step={0.01}
               onChange={(e) => {
                 const value = parseFloat(e.target.value);
                 if (isNaN(value) || value < 0 || value > 1) {
@@ -110,7 +115,46 @@ function LayerSettings({ layerSettings, updateLayerSettings }: { layerSettings: 
               onChange={(e) => updateLayerSettings({ ...layerSettings, color: e.target.value })}
             /> 
            </div> 
-        </OutlinedCard>)
+        </OutlinedCard>);
+    case 'hexagon-layer': // Add Hexagon Layer settings UI
+      return (
+        <OutlinedCard>
+          <CardTitle title="Hexagon Layer Settings" />
+          <div>
+            <label>Radius</label>
+            <input
+              type="number"
+              value={layerSettings.radius}
+              min={1000}
+              onChange={(e) => {
+                const value = parseFloat(e.target.value);
+                if (isNaN(value) ) return;
+                if (value < 1000) {
+                  updateLayerSettings({ ...layerSettings, radius: 1000 });
+                  return;
+                }
+                updateLayerSettings({ ...layerSettings, radius: value });
+              }}
+            />
+          </div>
+          <div>
+            <label>Coverage (0-1)</label>
+            <input
+              type="number"
+              value={layerSettings.coverage}
+              min={0}
+              max={1}
+              step={0.01}
+              onChange={(e) => {
+                const value = parseFloat(e.target.value);
+                if (isNaN(value) || value < 0 || value > 1) return;
+                updateLayerSettings({ ...layerSettings, coverage: value });
+              }}
+            />
+          </div>
+          {/* Add other HexagonLayer specific settings here if needed */}
+        </OutlinedCard>
+      );
   }
 }
 
