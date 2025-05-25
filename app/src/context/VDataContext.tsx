@@ -6,32 +6,35 @@ import {
   useFilterManager,
   type FilterState 
 } from '../modules/filterManager';
-import { useLayerManager, type LayerSettings } from '../modules/layerManager';
+// Updated import for LayerManagerHook and LayerType
+import { useLayerManager, type LayerSettings, type LayerManagerHook } from '../modules/layerManager';
 import { useCSVColumnManager } from '../modules/csvColumnManager';
 
 export interface VData {
   visualizationData: VisualizationData[];
-  layerSettings: LayerSettings;
+  // layerSettings: LayerSettings; // Old
+  activeLayers: LayerSettings[]; // New: for multiple layers
 }
 
-interface VDataState extends VData, FilterState { // Include FilterState
+// VDataState now includes LayerManagerHook properties for multi-layer management
+interface VDataState extends Omit<VData, 'activeLayers'>, FilterState, LayerManagerHook {
+  visualizationData: VisualizationData[]; // ensure visualizationData is part of the state
   latitudeColumn: string;
   longitudeColumn: string;
   labelColumn: string;
   setLatitudeColumn: (columnName: string) => void;
   setLongitudeColumn: (columnName: string) => void;
   setLabelColumn: (columnName: string) => void;
-  updateLayerSettings: (settings: LayerSettings) => void;
+  // updateLayerSettings: (settings: LayerSettings) => void; // Old: replaced by LayerManagerHook methods
   errorLocationMessage: string | null;
-  setDateFilterColumn: (columnName: string) => void; // Add setDateFilterColumn
-  setStartDate: (date: Dayjs) => void; // Add setStartDate
-  setEndDate: (date: Dayjs) => void; // Add setEndDate
+  setDateFilterColumn: (columnName: string) => void; 
+  setStartDate: (date: Dayjs) => void; 
+  setEndDate: (date: Dayjs) => void; 
 }
 
 
 const VDataContext = createContext<VDataState | undefined>(undefined);
 
-export type VisualizationType = 'scatterplot' | 'heatmap' | 'cluster';
 export type VisualizationData = {
   latitude: number;
   longitude: number;
@@ -95,12 +98,13 @@ const buildVisualizationData = (
   }, [csvData, latitudeColumn, longitudeColumn, labelColumn, errorLocationMessage, startDate, endDate, errorDateMessage, dateFilterColumn]);
 }
 
-const postUpdateSettings = ({ visualizationData, layerSettings }: VData, channel: BroadcastChannel) => {
+// Updated postUpdateSettings to handle activeLayers (array)
+const postUpdateSettings = ({ visualizationData, activeLayers }: VData, channel: BroadcastChannel) => {
   channel.postMessage({
     type: 'update-settings',
     payload: {
       visualizationData,
-      layerSettings,
+      activeLayers, // Changed from layerSettings to activeLayers
     }
   });
 }
@@ -110,7 +114,15 @@ export const VDataProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const [visualizationData, setVisualizationData] = useState<VisualizationData[]>([]);
   const { filterState, handleSetDateFilterColumn, handleSetStartDate, handleSetEndDate } = useFilterManager(csvData);
-  const { layerSettings, updateLayerSettings } = useLayerManager();
+  
+  // Use LayerManagerHook for multi-layer state and functions
+  const { 
+    activeLayers, 
+    addLayer, 
+    removeLayer, 
+    updateLayer, 
+    layerTypes 
+  } = useLayerManager();
 
   const {
     latitudeColumn,
@@ -143,19 +155,21 @@ export const VDataProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     channel.onmessage = (event) => {
       if (event.data?.type === 'settings-request') {
-        postUpdateSettings({ visualizationData, layerSettings }, channel);
+        // Pass activeLayers to postUpdateSettings
+        postUpdateSettings({ visualizationData, activeLayers }, channel);
       }
     };
     return () => {
       channel.close();
     };
-  }, []);
+  }, [visualizationData, activeLayers]); // Added activeLayers to dependencies for onmessage handler update
 
   useEffect(() => {
-    if (visualizationData.length > 0) {
-      postUpdateSettings({ visualizationData, layerSettings }, channelRef.current!);
+    if (visualizationData.length > 0 && channelRef.current) { // Ensure channelRef.current exists
+      // Pass activeLayers to postUpdateSettings
+      postUpdateSettings({ visualizationData, activeLayers }, channelRef.current);
     }
-  }, [visualizationData, layerSettings]);
+  }, [visualizationData, activeLayers]); // Dependency changed from layerSettings to activeLayers
 
   const value: VDataState = {
     latitudeColumn,
@@ -166,9 +180,8 @@ export const VDataProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setLabelColumn,
     errorLocationMessage,
     visualizationData,
-    layerSettings,
-    updateLayerSettings,
-    // Add filter state and setters to context value
+    
+    // Filter state and setters
     dateFilterColumn: filterState.dateFilterColumn,
     startDate: filterState.startDate,
     endDate: filterState.endDate,
@@ -178,6 +191,13 @@ export const VDataProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setDateFilterColumn: handleSetDateFilterColumn,
     setStartDate: handleSetStartDate,
     setEndDate: handleSetEndDate,
+
+    // Spread LayerManagerHook properties for multi-layer management
+    activeLayers,
+    addLayer,
+    removeLayer,
+    updateLayer,
+    layerTypes,
   };
 
   return (

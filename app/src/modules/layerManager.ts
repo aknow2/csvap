@@ -1,88 +1,88 @@
 import { useState, useCallback } from 'react';
 
-// Layer type definitions - these can be expanded with more specific properties
+// Layer type definitions with ID
 export type HeatmapLayerSettings = {
+  id: string;
   brand: 'heatmap-layer';
   opacity: number;
-  // Add other heatmap specific properties here
 };
 
 export type ScatterplotLayerSettings = {
+  id: string;
   brand: 'scatterplot-layer';
   radius: number;
   color: string;
-  // Add other scatterplot specific properties here
 };
 
 export type HexagonLayerSettings = {
+  id: string;
   brand: 'hexagon-layer';
   radius: number;
   coverage: number;
   opacity: number;
-  upperPercentile?: number; 
-  colorRange?: number[][]; 
+  upperPercentile?: number;
+  colorRange?: number[][];
 };
 
 export type LayerSettings = HeatmapLayerSettings | ScatterplotLayerSettings | HexagonLayerSettings;
 
 export type LayerType = LayerSettings['brand'];
 
-const layerTypes: LayerType[] = ['heatmap-layer', 'scatterplot-layer', 'hexagon-layer'];
+export const layerTypes: LayerType[] = ['heatmap-layer', 'scatterplot-layer', 'hexagon-layer'];
 
-const initialLayerSettings: LayerSettings = {
-  brand: 'hexagon-layer', // Default layer type
-  radius: 1000,
-  coverage: 0.8,
-  opacity: 0.8,
+// Initial state: an empty array or a default layer
+export const initialActiveLayers: LayerSettings[] = [];
+
+// Function to get default settings for a layer type
+const getDefaultSettingsForType = (type: LayerType, id: string): LayerSettings => {
+  switch (type) {
+    case 'heatmap-layer':
+      return { id, brand: 'heatmap-layer', opacity: 0.6 };
+    case 'scatterplot-layer':
+      return { id, brand: 'scatterplot-layer', radius: 5, color: '#007bff' };
+    case 'hexagon-layer':
+      return { id, brand: 'hexagon-layer', radius: 1000, coverage: 0.8, opacity: 0.8 };
+    default:
+      // This case should ideally not be reached if type is validated
+      throw new Error(`Unknown layer type: ${type}`);
+  }
 };
 
-// Custom hook for layer management
 export interface LayerManagerHook {
-  layerSettings: LayerSettings;
-  updateLayerSettings: (newSettings: LayerSettings) => void;
-  setLayerType: (type: LayerType) => void;
+  activeLayers: LayerSettings[];
+  addLayer: (type: LayerType) => string; // Returns the ID of the new layer
+  removeLayer: (id: string) => void;
+  updateLayer: (id: string, newSettings: Partial<Omit<LayerSettings, 'id' | 'brand'>>) => void;
   layerTypes: LayerType[];
 }
 
 export const useLayerManager = (): LayerManagerHook => {
-  const [layerSettings, setLayerSettings] = useState<LayerSettings>(initialLayerSettings);
+  const [activeLayers, setActiveLayers] = useState<LayerSettings[]>(initialActiveLayers);
 
-  const updateLayerSettings = useCallback((newSettings: LayerSettings) => {
-    setLayerSettings(prevSettings => ({ ...prevSettings, ...newSettings }));
+  const addLayer = useCallback((type: LayerType): string => {
+    const newId = crypto.randomUUID(); // Use crypto.randomUUID()
+    const newLayer = getDefaultSettingsForType(type, newId);
+    setActiveLayers(prevLayers => [...prevLayers, newLayer]);
+    return newId;
   }, []);
 
-  const setLayerType = useCallback((type: LayerType) => {
-    switch (type) {
-      case 'heatmap-layer':
-        setLayerSettings({
-          brand: 'heatmap-layer',
-          opacity: 0.6, // Default opacity for heatmap
-        });
-        break;
-      case 'scatterplot-layer':
-        setLayerSettings({
-          brand: 'scatterplot-layer',
-          radius: 5,
-          color: '#007bff', // Default color for scatterplot
-        });
-        break;
-      case 'hexagon-layer':
-        setLayerSettings({
-          brand: 'hexagon-layer',
-          radius: 1000,
-          coverage: 0.8,
-          opacity: 0.8,
-        });
-        break;
-      default:
-        setLayerSettings(initialLayerSettings); // Fallback to initial general settings
-    }
+  const removeLayer = useCallback((id: string) => {
+    setActiveLayers(prevLayers => prevLayers.filter(layer => layer.id !== id));
+  }, []);
+
+  const updateLayer = useCallback((id: string, newSettings: Partial<Omit<LayerSettings, 'id' | 'brand'>>) => {
+    setActiveLayers(prevLayers =>
+      prevLayers.map(layer =>
+        layer.id === id ? { ...layer, ...newSettings } : layer
+      )
+    );
   }, []);
 
   return {
-    layerSettings,
-    updateLayerSettings,
-    setLayerType,
+    activeLayers,
+    addLayer,
+    removeLayer,
+    updateLayer,
     layerTypes,
   };
 };
