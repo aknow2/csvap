@@ -1,11 +1,30 @@
 import dayjs, { Dayjs } from 'dayjs';
+import React, { useState } from 'react';
 import { useCSV } from '../context/CSVContext';
 import { useVData } from '../context/VDataContext';
-import type { LayerSettings } from '../modules/layerManager';
+import type { LayerSettings, LayerType, HeatmapLayerSettings, ScatterplotLayerSettings, HexagonLayerSettings } from '../modules/layerManager';
+
+// Helper types for LayerEditorCard
+type ModifiableHeatmapSettings = Omit<HeatmapLayerSettings, 'id' | 'brand'>;
+type ModifiableScatterplotSettings = Omit<ScatterplotLayerSettings, 'id' | 'brand'>;
+type ModifiableHexagonSettings = Omit<HexagonLayerSettings, 'id' | 'brand'>;
+
+// Union of all keys that can be modified across any layer type
+type AllModifiableSettingKeys = 
+  keyof ModifiableHeatmapSettings | 
+  keyof ModifiableScatterplotSettings | 
+  keyof ModifiableHexagonSettings;
 
 function OutlinedCard({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{ border: '1px solid #ccc', borderRadius: '8px', padding: '16px', marginBottom: '16px', width: '100%', maxWidth: '400px', backgroundColor: '#fff' }}>
+    <div style={{
+      border: '1px solid #ccc',
+      borderRadius: '8px',
+      padding: '16px',
+      marginBottom: '16px',
+      width: '100%',
+      maxWidth: '600px',
+      backgroundColor: '#fff' }}>
       {children}
     </div>
   );
@@ -35,147 +54,143 @@ function CardSubtitle({ subtitle }: { subtitle: string }) {
   );
 }
 
-function LayerSelection({ layerSettings, updateLayerSettings }: { layerSettings: LayerSettings; updateLayerSettings: (settings: LayerSettings) => void }) {
-  return (
-    <OutlinedCard>
-      <CardTitle title="Layers" />
-      <div style={{ marginBottom: '16px' }}>
-        <label>Layer Type</label>
-        <select
-          value={layerSettings.brand}
-          onChange={(e) => {
-            const selectedLayer = e.target.value as LayerSettings['brand'];
-            switch (selectedLayer) {
-              case 'heatmap-layer':
-                updateLayerSettings({ brand: selectedLayer, opacity: 0.5 });
-                break;
-              case 'scatterplot-layer':
-                updateLayerSettings({ brand: selectedLayer, radius: 100, color: '#49FF20'  });
-                break;
-              case 'hexagon-layer':
-                updateLayerSettings({ brand: selectedLayer, radius: 1000, coverage: 0.8, opacity: 0.8 });
-                break;
-              default:
-                throw new Error(`Unknown layer type: ${selectedLayer}`);
-            }
-          }}
-        >
-          <option value="heatmap-layer">Heatmap Layer</option>
-          <option value="scatterplot-layer">Scatterplot Layer</option>
-          <option value="hexagon-layer">Hexagon Layer</option> {/* Add Hexagon Layer option */}
-        </select>
-      </div>
-      <LayerSettings
-        layerSettings={layerSettings}
-        updateLayerSettings={updateLayerSettings}
-      />
-      </OutlinedCard>
-  );
+// Remove old LayerSelection and LayerSettings components as they are for a single layer.
+// We will create a new component for editing individual layers.
+
+interface LayerEditorCardProps {
+  layer: LayerSettings;
+  updateLayer: (id: string, newSettings: Partial<Omit<LayerSettings, 'id' | 'brand'>>) => void;
+  removeLayer: (id: string) => void;
 }
 
-function LayerSettings({ layerSettings, updateLayerSettings }: { layerSettings: LayerSettings; updateLayerSettings: (settings: LayerSettings) => void }) {
+const LayerEditorCard: React.FC<LayerEditorCardProps> = ({ layer, updateLayer, removeLayer }) => {
+  // Updated handleSettingChange function
+  const handleSettingChange = <K extends AllModifiableSettingKeys>(
+    setting: K,
+    value: K extends 'color' ? string : number // 'color' is string, other known settings are numbers
+  ) => {
+    // The object { [setting]: value } is now strongly typed.
+    // e.g., if K is 'opacity', value is number -> { opacity: number }
+    // This is assignable to Partial<Omit<LayerSettings, 'id' | 'brand'>>
+    updateLayer(layer.id, { [setting]: value });
+  };
 
-  switch (layerSettings.brand) {
-    case 'heatmap-layer':
-      return (
-        <>
-          <CardSubtitle subtitle="Heatmap Layer Settings" />
-          <div>
-            <label>Opacity</label>
-            <input
-              type="number"
-              value={layerSettings.opacity}
-              style={{ width: '40%' }}
-              min={0}
-              max={1}
-              step={0.01}
-              onChange={(e) => {
-                const value = parseFloat(e.target.value);
-                if (isNaN(value) || value < 0 || value > 1) {
-                  return; // Ignore invalid values
-                }
-                updateLayerSettings({ ...layerSettings, opacity: value });
-              }}
-            />
-          </div>
-        </>
-      );
-    case 'scatterplot-layer':
-      return (
-        <>
-          <CardSubtitle subtitle="Scatterplot Layer Settings" />
-          <div>
-            <label>Radius</label>
-            <input
-              type="number"
-              value={layerSettings.radius}
-              onChange={(e) => updateLayerSettings({ ...layerSettings, radius: parseFloat(e.target.value) })}
-            />
-           </div>
-           <div>
-            <label>Color</label>
-            <input
-              type="color"
-              value={layerSettings.color}
-              onChange={(e) => updateLayerSettings({ ...layerSettings, color: e.target.value })}
-            /> 
-           </div> 
-        </>)
-    case 'hexagon-layer':
-      return (
-        <>
-          <CardSubtitle subtitle="Hexagon Layer Settings" />
-          <div>
-            <label>Radius</label>
-            <input
-              type="number"
-              value={layerSettings.radius}
-              min={1000}
-              onChange={(e) => {
-                const value = parseFloat(e.target.value);
-                if (isNaN(value) ) return;
-                if (value < 1000) {
-                  updateLayerSettings({ ...layerSettings, radius: 1000 });
-                  return;
-                }
-                updateLayerSettings({ ...layerSettings, radius: value });
-              }}
-            />
-          </div>
-          <div>
-            <label>Coverage (0-1)</label>
-            <input
-              type="number"
-              value={layerSettings.coverage}
-              min={0}
-              max={1}
-              step={0.01}
-              onChange={(e) => {
-                const value = parseFloat(e.target.value);
-                if (isNaN(value) || value < 0 || value > 1) return;
-                updateLayerSettings({ ...layerSettings, coverage: value });
-              }}
-            />
-          </div>
-          <div>
-            <label>Opacity (0-1)</label>
-            <input
-              type="number"
-              value={layerSettings.opacity}
-              min={0}
-              max={1}
-              step={0.01}
-              onChange={(e) => {
-                const value = parseFloat(e.target.value);
-                if (isNaN(value) || value < 0 || value > 1) return;
-                updateLayerSettings({ ...layerSettings, opacity: value });
-              }}
-            />
-          </div>
-          {/* Add other HexagonLayer specific settings here if needed */}
-        </>
+  const renderLayerSpecificSettings = () => {
+    switch (layer.brand) {
+      case 'heatmap-layer':
+        const heatmapSettings = layer as HeatmapLayerSettings;
+        return (
+          <>
+            <CardSubtitle subtitle="Heatmap Settings" />
+            <div>
+              <label>Opacity: </label>
+              <input
+                type="number"
+                value={heatmapSettings.opacity}
+                style={{ width: '40%' }}
+                min={0}
+                max={1}
+                step={0.01}
+                onChange={(e) => {
+                  const val = parseFloat(e.target.value);
+                  if (!isNaN(val) && val >= 0 && val <= 1) {
+                    handleSettingChange('opacity', val);
+                  }
+                }}
+              />
+            </div>
+          </>
         );
-  }
+      case 'scatterplot-layer':
+        const scatterplotSettings = layer as ScatterplotLayerSettings;
+        return (
+          <>
+            <CardSubtitle subtitle="Scatterplot Settings" />
+            <div>
+              <label>Radius: </label>
+              <input
+                type="number"
+                value={scatterplotSettings.radius}
+                onChange={(e) => {
+                  const val = parseFloat(e.target.value);
+                  // Added NaN check and ensure positive for radius
+                  if (!isNaN(val) && val > 0) {
+                     handleSettingChange('radius', val);
+                  }
+                }}
+              />
+            </div>
+            <div>
+              <label>Color: </label>
+              <input
+                type="color"
+                value={scatterplotSettings.color}
+                onChange={(e) => handleSettingChange('color', e.target.value)}
+              />
+            </div>
+          </>
+        );
+      case 'hexagon-layer':
+        const hexagonSettings = layer as HexagonLayerSettings;
+        return (
+          <>
+            <CardSubtitle subtitle="Hexagon Settings" />
+            <div>
+              <label>Radius (m): </label>
+              <input
+                type="number"
+                value={hexagonSettings.radius}
+                min={50} // Example min
+                onChange={(e) => {
+                    const val = parseFloat(e.target.value);
+                    if(!isNaN(val) && val >= 50) handleSettingChange('radius', val)
+                }}
+              />
+            </div>
+            <div>
+              <label>Coverage (0-1): </label>
+              <input
+                type="number"
+                value={hexagonSettings.coverage}
+                min={0}
+                max={1}
+                step={0.01}
+                onChange={(e) => {
+                    const val = parseFloat(e.target.value);
+                    if(!isNaN(val) && val >=0 && val <=1) handleSettingChange('coverage', val)
+                }}
+              />
+            </div>
+            <div>
+              <label>Opacity (0-1): </label>
+              <input
+                type="number"
+                value={hexagonSettings.opacity}
+                min={0}
+                max={1}
+                step={0.01}
+                onChange={(e) => {
+                    const val = parseFloat(e.target.value);
+                    if(!isNaN(val) && val >=0 && val <=1) handleSettingChange('opacity', val)
+                }}
+              />
+            </div>
+          </>
+        );
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <OutlinedCard>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <CardTitle title={`${layer.brand.replace('-layer', '').replace(/^\w/, c => c.toUpperCase())} Layer (ID: ${layer.id.substring(0, 4)})`} />
+        <button onClick={() => removeLayer(layer.id)} style={{ color: 'red', background:'none', border:'none', cursor:'pointer'}}>Remove</button>
+      </div>
+      {renderLayerSpecificSettings()}
+    </OutlinedCard>
+  );
 }
 
 function DatetimeFilterSetting({
@@ -292,62 +307,77 @@ function DataController() {
     labelColumn,
     setLabelColumn,
     errorLocationMessage,
-    visualizationData,
-    updateLayerSettings,
+    // visualizationData, // Not directly used in DataController UI for layer settings now
     startDate,
     endDate,
     setStartDate,
     setEndDate,
     setDateFilterColumn,
-    layerSettings,
     errorDateMessage,
     dateFilterColumn,
     minDate,
     maxDate,
+    activeLayers,
+    addLayer,
+    removeLayer,
+    updateLayer,
+    layerTypes,
   } = useVData();
+
+  const [selectedLayerTypeToAdd, setSelectedLayerTypeToAdd] = useState<LayerType>(layerTypes[0] || 'hexagon-layer');
+
+  const handleAddLayer = () => {
+    if (selectedLayerTypeToAdd) {
+      addLayer(selectedLayerTypeToAdd);
+    }
+  };
 
   return (
     <Container>
       <OutlinedCard>
-        <CardTitle title='CSV'></CardTitle>
-        <input
-          type="file"
-          accept=".csv"
-          onChange={handleFileChange}
-        />
-        {csvData.length > 0 && (
+        <CardTitle title="Data Source" />
+        <input type="file" accept=".csv" onChange={handleFileChange} />
+        {csvData && (
           <>
             <div>
-              <label> Total: {csvData.length}</label>
-            </div>
-            <div>
-              <label> Displayed: {visualizationData.length}</label>
-            </div>
-            <CardSubtitle subtitle='Select column'></CardSubtitle>
-            <div>
-              <label>Latitude</label>
-              <select value={latitudeColumn} onChange={(e) => setLatitudeColumn(e.target.value)} disabled={columnNames.length === 0}>
+              <label>Latitude Column</label>
+              <select
+                value={latitudeColumn}
+                onChange={(e) => setLatitudeColumn(e.target.value)}
+              >
                 <option value="">Select a column</option>
                 {columnNames.map((columnName) => (
-                  <option key={columnName} value={columnName}>{columnName}</option>
+                  <option key={columnName} value={columnName}>
+                    {columnName}
+                  </option>
                 ))}
               </select>
             </div>
             <div>
-              <label>Longitude</label>
-              <select value={longitudeColumn} onChange={(e) => setLongitudeColumn(e.target.value)} disabled={columnNames.length === 0}>
+              <label>Longitude Column</label>
+              <select
+                value={longitudeColumn}
+                onChange={(e) => setLongitudeColumn(e.target.value)}
+              >
                 <option value="">Select a column</option>
                 {columnNames.map((columnName) => (
-                  <option key={columnName} value={columnName}>{columnName}</option>
+                  <option key={columnName} value={columnName}>
+                    {columnName}
+                  </option>
                 ))}
               </select>
             </div>
             <div>
-              <label>Label</label>
-              <select value={labelColumn} onChange={(e) => setLabelColumn(e.target.value)} disabled={columnNames.length === 0}>
+              <label>Label Column</label>
+              <select
+                value={labelColumn}
+                onChange={(e) => setLabelColumn(e.target.value)}
+              >
                 <option value="">Select a column</option>
                 {columnNames.map((columnName) => (
-                  <option key={columnName} value={columnName}>{columnName}</option>
+                  <option key={columnName} value={columnName}>
+                    {columnName}
+                  </option>
                 ))}
               </select>
             </div>
@@ -357,27 +387,53 @@ function DataController() {
           </>
         )}
       </OutlinedCard>
-      {
-        csvData.length > 0 && 
-          <>
-            <LayerSelection
-              layerSettings={layerSettings}
-              updateLayerSettings={updateLayerSettings}
-            ></LayerSelection>
-            <DatetimeFilterSetting
-              startDate={startDate}
-              endDate={endDate}
-              setStartDate={setStartDate}
-              setEndDate={setEndDate}
-              setDateFilterColumn={setDateFilterColumn}
-              errorMessage={errorDateMessage}
-              columnNames={columnNames}
-              dateFilterColumn={dateFilterColumn}
-              minDate={minDate}
-              maxDate={maxDate}
-            ></DatetimeFilterSetting>
-          </>
-      }
+
+      {csvData && (
+        <DatetimeFilterSetting 
+          startDate={startDate}
+          endDate={endDate}
+          setStartDate={setStartDate}
+          setEndDate={setEndDate}
+          errorMessage={errorDateMessage}
+          columnNames={columnNames}
+          setDateFilterColumn={setDateFilterColumn}
+          dateFilterColumn={dateFilterColumn}
+          minDate={minDate}
+          maxDate={maxDate}
+        />
+      )}
+
+      {/* Layer Management UI */}
+      <OutlinedCard>
+        <CardTitle title="Layer Configuration" />
+        <div style={{ marginBottom: '16px' }}>
+          <label htmlFor="layerTypeSelect" style={{ marginRight: '8px' }}>Add Layer Type:</label>
+          <select 
+            id="layerTypeSelect"
+            value={selectedLayerTypeToAdd} 
+            onChange={(e) => setSelectedLayerTypeToAdd(e.target.value as LayerType)}
+            style={{ marginRight: '8px' }}
+          >
+            {layerTypes.map(type => (
+              <option key={type} value={type}>
+                {type.replace('-layer', '').replace(/^\w/, c => c.toUpperCase())}
+              </option>
+            ))}
+          </select>
+          <button onClick={handleAddLayer}>Add Layer</button>
+        </div>
+
+        {activeLayers.length === 0 && <p>No layers added yet. Add a layer to begin.</p>}
+        {activeLayers.map(layer => (
+          <LayerEditorCard 
+            key={layer.id} 
+            layer={layer} 
+            updateLayer={updateLayer} 
+            removeLayer={removeLayer} 
+          />
+        ))}
+      </OutlinedCard>
+
     </Container>
   );
 }
