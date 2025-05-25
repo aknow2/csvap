@@ -1,6 +1,7 @@
 import dayjs, { Dayjs } from 'dayjs';
 import { useCSV } from '../context/CSVContext';
-import { useVData, type LayerSettings } from '../context/VDataContext';
+import { useVData } from '../context/VDataContext';
+import type { LayerSettings } from '../modules/layerManager';
 
 function OutlinedCard({ children }: { children: React.ReactNode }) {
   return (
@@ -37,8 +38,8 @@ function CardSubtitle({ subtitle }: { subtitle: string }) {
 function LayerSelection({ layerSettings, updateLayerSettings }: { layerSettings: LayerSettings; updateLayerSettings: (settings: LayerSettings) => void }) {
   return (
     <OutlinedCard>
-      <CardTitle title="Layer Selection" />
-      <div>
+      <CardTitle title="Layers" />
+      <div style={{ marginBottom: '16px' }}>
         <label>Layer Type</label>
         <select
           value={layerSettings.brand}
@@ -51,8 +52,8 @@ function LayerSelection({ layerSettings, updateLayerSettings }: { layerSettings:
               case 'scatterplot-layer':
                 updateLayerSettings({ brand: selectedLayer, radius: 100, color: '#49FF20'  });
                 break;
-              case 'hexagon-layer': // Add Hexagon Layer case
-                updateLayerSettings({ brand: selectedLayer, radius: 1000, coverage: 0.8, opacity: 0.8 }); // Set default values including opacity
+              case 'hexagon-layer':
+                updateLayerSettings({ brand: selectedLayer, radius: 1000, coverage: 0.8, opacity: 0.8 });
                 break;
               default:
                 throw new Error(`Unknown layer type: ${selectedLayer}`);
@@ -64,6 +65,10 @@ function LayerSelection({ layerSettings, updateLayerSettings }: { layerSettings:
           <option value="hexagon-layer">Hexagon Layer</option> {/* Add Hexagon Layer option */}
         </select>
       </div>
+      <LayerSettings
+        layerSettings={layerSettings}
+        updateLayerSettings={updateLayerSettings}
+      />
       </OutlinedCard>
   );
 }
@@ -73,8 +78,8 @@ function LayerSettings({ layerSettings, updateLayerSettings }: { layerSettings: 
   switch (layerSettings.brand) {
     case 'heatmap-layer':
       return (
-        <OutlinedCard>
-          <CardTitle title="Heatmap Layer Settings" />
+        <>
+          <CardSubtitle subtitle="Heatmap Layer Settings" />
           <div>
             <label>Opacity</label>
             <input
@@ -93,12 +98,12 @@ function LayerSettings({ layerSettings, updateLayerSettings }: { layerSettings: 
               }}
             />
           </div>
-        </OutlinedCard>
+        </>
       );
     case 'scatterplot-layer':
       return (
-        <OutlinedCard>
-          <CardTitle title="Scatterplot Layer Settings" />
+        <>
+          <CardSubtitle subtitle="Scatterplot Layer Settings" />
           <div>
             <label>Radius</label>
             <input
@@ -115,11 +120,11 @@ function LayerSettings({ layerSettings, updateLayerSettings }: { layerSettings: 
               onChange={(e) => updateLayerSettings({ ...layerSettings, color: e.target.value })}
             /> 
            </div> 
-        </OutlinedCard>);
-    case 'hexagon-layer': // Add Hexagon Layer settings UI
+        </>)
+    case 'hexagon-layer':
       return (
-        <OutlinedCard>
-          <CardTitle title="Hexagon Layer Settings" />
+        <>
+          <CardSubtitle subtitle="Hexagon Layer Settings" />
           <div>
             <label>Radius</label>
             <input
@@ -168,8 +173,8 @@ function LayerSettings({ layerSettings, updateLayerSettings }: { layerSettings: 
             />
           </div>
           {/* Add other HexagonLayer specific settings here if needed */}
-        </OutlinedCard>
-      );
+        </>
+        );
   }
 }
 
@@ -359,10 +364,6 @@ function DataController() {
               layerSettings={layerSettings}
               updateLayerSettings={updateLayerSettings}
             ></LayerSelection>
-            <LayerSettings
-              updateLayerSettings={updateLayerSettings}
-              layerSettings={layerSettings}
-            ></LayerSettings>
             <DatetimeFilterSetting
               startDate={startDate}
               endDate={endDate}

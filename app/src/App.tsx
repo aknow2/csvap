@@ -16,9 +16,9 @@ const routes = {
   '#ctrl': function () {
 
     return  <CSVProvider>
-      <VDataProvider>
-        <CSVReader />
-      </VDataProvider>
+        <VDataProvider>
+          <CSVReader />
+        </VDataProvider>
       </CSVProvider>
   },
 };
